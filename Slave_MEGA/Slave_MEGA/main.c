@@ -16,6 +16,7 @@
 #include <util/setbaud.h>
 //importing necessary header files
 #include "i2c.h"
+#include "keypad.h"
 #include "usart.h"
 
 volatile uint8_t motionSensed = 0;
@@ -33,96 +34,117 @@ STATE g_STATE = IDLE;
 int main(void)
 {
 	USART_init(MYUBBR);
-
+	KEYPAD_Init();
+	I2C_init_slave(SLAVE_ADDRESS);
 	stdout = &uart_output;
 	stdin = &uart_input;
 
-	char twi_receive_data[20];
-	char test_char_array[16]; // 16-bit array, assumes that the int given is 16-bits
-	uint8_t twi_index = 0;
-	uint8_t twi_status = 0;
-
-	TWAR = SLAVE_ADDRESS;
-
-	//initialize TWI slave
-	TWCR |= (1 << TWEA) | (1 << TWEN);
-	TWCR &= ~(1 << TWSTA) & ~(1 << TWSTO);
 
 	DDRE &= ~(1 << PE4);
 	uint8_t motionState = 0;
+	uint8_t key;
+	uint8_t count = 0;
+	uint8_t count2 = 0;
+	uint8_t ack_status;
     /* Replace with your application code */
     while (1) 
     {
+//
+		//switch(I2C_listen_from_master()) {
+			//case SLAVE_READ:
+				//printf("SLA+W received and ACK returned\n");
+				//do {
+					//count = I2C_receive_from_master();
+					//printf("Count: %d\n", count);
+				//} while (count != -1);
+				//_delay_ms(5000);
+				//break;
+			//case 1:
+				//printf("SLA+R received and ACK returned\n");
+				//do {
+					//ack_status = I2C_transmit_to_master(count2);
+					//printf("Count 2: %d\n", count2);
+					//count2++;
+				//} while (ack_status == 0);
+				//_delay_ms(5000);
+				//break;
+			//case 2:
+				//printf("General call received & ack returned\n");
+				//break;
+				//
+		//}
 
-		switch(g_STATE) {
-			case IDLE:
-				break; 
-			case READKEYPAD:
-				break;
-			case READMOTIONSENSOR:
-				break;
-			default:
-				g_STATE = FAULT;
-				break;
-		}
-		motionState = (PINE & (1 << PE4));
-		if (motionState != 0){
-			printf("motion sensed");
-		} else if (motionState == 0){
-			printf("motion not checked");
-		} else {
-			printf("fault");
-		}
-		_delay_ms(3000);
+		
+		//switch(g_STATE) {
+			//case IDLE:
+				//switch(I2C_listen_from_master()) {
+					//case SLAVE_READ:
+						//printf("SLA+W get\n");
+						//break;
+					//case SLAVE_WRITE:
+						//I2C_transmit_to_master("y");
+						//break;
+				//}
+				//break;
+			//case READKEYPAD:
+				//switch (I2C_listen_from_master()) {
+					//case SLAVE_WRITE:
+						//do {
+							//key = KEYPAD_GetKey();
+							//ack_status = I2C_transmit_to_master(key);
+						//} while (ack_status == 0);
+						//g_STATE = IDLE;
+						//break;
+					//case SLAVE_READ:
+						//g_STATE = FAULT;
+				//}
+				//break;
+			//case READMOTIONSENSOR:
+				//switch (I2C_listen_from_master()) {
+					//case SLAVE_WRITE:
+						//motionState = (PINE & (1 << PE4));
+						//if (motionState != 0) {
+							//motionSensed = 1;
+						//do {
+							//ack_status = I2C_transmit_to_master(motionState);
+						//} while (ack_status == 0);
+						//motionSensed = 0;
+						//g_STATE = IDLE;
+						//break;
+				//}
+				//break;
+			//default:
+				//g_STATE = FAULT;
+				//break;
+		//}
+		//motionState = (PINE & (1 << PE4));
+		//if (motionState != 0){
+			//printf("motion sensed");
+		//} else if (motionState == 0){
+			//printf("motion not checked");
+		//} else {
+			//printf("fault");
+		//}
+		
+		_delay_ms(100);
 		
 		
-		//while (!(TWCR & (1 << TWINT))) {
-			//;
+		//motionState = (PINE & (1 << PE4));
+		//if (motionState != 0) {
+		//motionSensed = 1;
+		//do {
+		//twi_status = I2C_transmit_to_master_ACK(motionState);
+		//} while (twi_status == MASTER_ACK_RECEIVED);
+		//
+		//if (twi_status == MASTER_ACK_RECEIVED) {
+		//key  = KEYPAD_GetKey();
+		//printf("%c\r\n", (char)key);
 		//}
-//
-		//twi_status = (TWSR & 0xF8);
-//
-		//TWCR |= (1 << TWINT) | (1 << TWEA) | (1 << TWEN);
-//
-		//while (!(TWCR & (1 << TWINT))) {
-			//;
-		//}
-//
-		//twi_status = (TWSR & 0xF8);
-		//// if status indicates that previous response was either slave address or general call and ACK was returned
-		//// store the data register value to twi_receive_data
-		//if((twi_status == 0x80) || (twi_status == 0x90)) {
-			//
-			//twi_receive_data[twi_index] = TWDR;
-			//twi_index++;
-		//} else if ((twi_status == 0x88) || (twi_status == 0x98)) {
-		//// if status indicates that previous response was either slave address or general call and NOT ACK was returned
-		//// store the data register value to twi_receive_data
-			//twi_receive_data[twi_index] = TWDR;
-			//twi_index++;
-		//} else if ((twi_status == 0xA0)) {
-			//// Stop condition or repeated start was received
-			//// Clear interrupt flag
-			//TWCR |= (1 << TWINT);
-		//}
-//
-		//if (20 <= twi_index) {
-			//printf(twi_receive_data);
-			//twi_index = 0;
 		//}
     }
 
 	return 0;
 }
 
-
- void motion_check() {
-
-	 uint8_t motionState = (PINE & (1 << PE4));
-	 if (motionState && motionSensed != 1) {
-		motionSensed = 1;
-		printf("Motion checked");
-	 }
- }
 
 

@@ -9,7 +9,8 @@
 #define FOSC 16000000UL
 #define BAUD 9600 
 #define MYBBR (FOSC/16/BAUD-1) // for i2c
-#define SLAVE_ADDRESS 0x30
+#define SLAVE_READ_ADDRESS 0x21
+#define SLAVE_WRITE_ADDRESS 0x20
 
 #include <util/delay.h>
 #include <avr/io.h>
@@ -19,8 +20,9 @@
 #include "i2c.h"
 #include "lcd.h"
 #include "usart.h"
+#include "buzzer.h"
 
-
+#define	count 10
 FILE uart_output = FDEV_SETUP_STREAM(USART_transmit, NULL, _FDEV_SETUP_WRITE);
 FILE uart_input = FDEV_SETUP_STREAM(NULL, USART_receive, _FDEV_SETUP_READ);
 
@@ -31,73 +33,101 @@ typedef enum {
 
 int main(void)
 {
+	
     USART_init(MYBBR);
 	lcd_init(LCD_DISP_ON);
-
+	I2C_init();
+	
 	stdout = &uart_output;
 	stdin = &uart_input;
 	
 	STATE g_State = IDLE;
-	lcd_clrscr();
-	lcd_puts("Detecting...");
+
 	//unsigned char twi_send_data[20] = "Master to slave\n";
 	//char test_char_array[16];
 	//uint8_t twi_status = 0;
 	uint8_t motion_sensed;
 	uint8_t twi_status;
+
+	lcd_clrscr();
+	lcd_puts("Detecting");
 	//Slave address 
 	
+	buzzer_alarm();
 	/* Replace with your application code */
     while (1) 
     {
-
-		switch(g_State) {
-			case IDLE:
-				g_State = READ_MOTION;
-				break;
-			case START_ALARM:
-				break;
-			case STOP_ALARM:
-				break;
-			case HANDLE_KEYPAD:
-				break;
-			case READ_MOTION:
-				twi_status = I2C_start_read(SLAVE_ADDRESS);
-				if (twi_status == 0) {
-					printf("ERROR");
-					break;
-				} else {
-					printf("YES");
-				}
-				//twi_status = I2C_read_start(SLAVE_ADDRESS);
-				//if (twi_status != TWI_ACK_RECEIVED) {
+		
+		//I2C_start_write(SLAVE_WRITE_ADDRESS);
+		//_delay_ms(5);
+//
+		//for (uint8_t i = 0; i < count; i++) {
+			//lcd_clrscr();
+			//lcd_puts("Master count: ");
+			//lcd_gotoxy(0,1);
+			//lcd_puts(i); 
+			//I2C_write(i);
+			//_delay_ms(500);
+		//}
+//
+		//I2C_start_read(SLAVE_READ_ADDRESS);
+		//_delay_ms(5);
+		//for (uint8_t i=0;i < count; i++)
+		//{
+			//if (i < count - 1){
+				//printf("MASTER ACK: %d", I2C_read_ack());
+				//}else {
+				//printf("MASTER NACK: %d", I2C_read_nack());
+			//}
+			//_delay_ms(500);
+		//}
+		//switch(g_State) {
+			//case IDLE:
+				//g_State = READ_MOTION;
+				//break;
+			//case START_ALARM:
+				//lcd_clrscr();
+				//lcd_puts("Alarm!");
+				//start_buzz();
+				//_delay_ms(2000);
+				//stop_buzz();
+				//break;
+			//case STOP_ALARM:
+				//break;
+			//case HANDLE_KEYPAD:
+				//break;
+			//case READ_MOTION:
+				//twi_status = I2C_start_read(SLAVE_READ_ADDRESS);
+				//if (twi_status != 1) {
 					//g_State = FAIL;
 					//break;
 				//}
+//
 				//motion_sensed = I2C_read_ack();
-				//if (motion_sensed == 'y') {
+				//if (motion_sensed == "y") {
 					//g_State = FAIL;
 					//break;
 				//}
 				//I2C_read_nack();
 				//I2C_stop();
 //
-				//if (motion_sensed == 1){
+				//if (motion_sensed == 1) {
 					//g_State = START_ALARM;
-					//break;
+				//} else {
+					//g_State = IDLE;
 				//}
-				break;
-			case KEYPAD_TIMEOUT:
-				break;
-			case WRONG_PASSWORD:
-				break;
-			case TOO_LONG_PASSWORD:
-				break;
-			case FAIL:
-				break;
-			default:
-				break;
-		}
+				//break;
+			//case KEYPAD_TIMEOUT:
+				//break;
+			//case WRONG_PASSWORD:
+				//break;
+			//case TOO_LONG_PASSWORD:
+				//break;
+			//case FAIL:
+				//break;
+			//default:
+				//break;
+		//}
 		//TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
 //
 		//while (!(TWCR & (1 << TWINT))){
@@ -149,3 +179,20 @@ int main(void)
 	return 0;
 }
 
+
+void buzzer_alarm(void) {
+	// Set BUZZER_PIN as output
+	DDRB |= (1 << PB3);
+	
+	// Generate the alarm sound
+	for (int i = 0; i < 3; i++) { // Repeat the sound three times
+		PORTB |= (1 << PB3); // Turn on the buzzer
+		_delay_ms(200); // Keep the buzzer on for 200 milliseconds
+		PORTB &= ~(1 << PB3); // Turn off the buzzer
+		_delay_ms(200); // Wait for 200 milliseconds before the next iteration
+	}
+}
+
+void stop_buzzer(void) {
+	PORTB &= ~(1 << PB3);
+}

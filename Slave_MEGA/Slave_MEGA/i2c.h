@@ -23,7 +23,7 @@
 void I2C_init_slave(char slave_address);
 uint8_t I2C_listen_from_master();
 uint8_t I2C_receive_from_master();
-uint8_t I2C_transmit_to_master_ACK(uint8_t data);
-uint8_t I2C_transmit_to_master_NACK(uint8_t data);
+uint8_t I2C_transmit_to_master(uint8_t data);
+//uint8_t I2C_transmit_to_master_NACK(uint8_t data);
 
 #endif /* I2C_H_ */

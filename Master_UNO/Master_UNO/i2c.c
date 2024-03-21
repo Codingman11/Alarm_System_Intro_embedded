@@ -33,7 +33,7 @@
 		return 2;
 	}		
 
-	return -1; 
+	return 3; // SLA+W failed 
  }
 
  //I2C  read start
@@ -56,7 +56,7 @@
 		return 2;
 	}
 
-	return -1; 
+	return 3; 
  }
  //I2C write
 
@@ -67,13 +67,13 @@
 	while (!(TWCR & (1 << TWINT)));
 	twi_status = TWSR & 0xF8;
 	if (twi_status == 0x28) {
-		return 1;
+		return 0;
 	}
 	if (twi_status == 0x30) {
-		return 2;
+		return 1;
 	} 
 
-	return -1;
+	return 2; //Data transmission failed
 		
  }
  //I2C ack read

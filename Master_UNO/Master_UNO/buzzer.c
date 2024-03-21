@@ -7,8 +7,10 @@
 
  #include "main.h"
  #include "buzzer.h"
+ #include <avr/io.h>
+ #include <avr/interrupt.h>
 ISR(TIMER1_COMPA_vect) {
-	PORTD ^= (1 << PD2);
+	PORTB ^= (1 << PB3);
 }
 
 void init_buzzer() {
@@ -30,5 +32,5 @@ void start_buzz() {
 void stop_buzz() {
 	TIMSK1 &= ~(1 << OCIE1A);
 
-	PORTD &= ~(1 << PD2);
+	PORTB &= ~(1 << PB3);
 }

@@ -14,6 +14,8 @@
 #include <avr/delay.h>
 
 
-
+void init_buzzer();
+void start_buzz();
+void stop_buzz();
 
 #endif /* BUZZER_H_ */

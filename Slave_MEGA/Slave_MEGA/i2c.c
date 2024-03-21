@@ -34,21 +34,22 @@
 	
 	while (1) {
 		
-		while(!(TWCR & (1 << TWINT))){
-			;
-		}
+		while(!(TWCR & (1 << TWINT)));
+
 		twi_status = (TWSR & 0xF8);
 
-		if ((twi_status == 0x60) || (twi_status == 0x68)) {
-			return SLAVE_READ;
+		if ((twi_status == 0x60) || (twi_status == 0x68)) { //SLA+W received & ack returned
+			return 0;
 		}
-		else if (twi_status == 0xA8 || (twi_status == 0xB0)) {
-			return SLAVE_WRITE;
+		else if (twi_status == 0xA8 || (twi_status == 0xB0)) { //SLA+R received & ack returned
+			return 1;
 		}
-		else if (twi_status == 0x70 || (twi_status == 0x78)) {
+		else if (twi_status == 0x70 || (twi_status == 0x78)) { //General call received & ack returned
 			
-			return SLAVE_GENERAL;
-		} 
+			return 2;
+		} else {
+			continue;
+		}
 	}
  }
 
@@ -66,30 +67,28 @@
 	uint8_t twi_status;
 	
 		
-	while (1) {
-		twi_status = (TWSR & 0xF8);
-		while(!(TWCR & (1 << TWINT))){
-			;
-		}
+	TWCR = (1 << TWEN) | (1 << TWEA) | (1 << TWINT);
+	while(!(TWCR & (1 << TWINT)));
+	twi_status = (TWSR & 0xF8);
 
-		if ((twi_status == 0x80) || (twi_status == 0x90)) {
-			return TWDR;
-		} 
-		else if (twi_status == 0x88 || (twi_status == 0x98)) {
-			return TWDR;
-		}
-		else if (twi_status == 0xA0) {
-			TWCR |= (1 << TWINT);
-			return MASTER_STOP;
-		} else {
-			return MASTER_ERROR;
-		}
+	if ((twi_status == 0x80) || (twi_status == 0x90)) {
+		return TWDR;
 	}
+	else if (twi_status == 0x88 || (twi_status == 0x98)) {
+		return TWDR;
+	}
+	else if (twi_status == 0xA0) {
+		TWCR |= (1 << TWINT);
+		return -1;
+	} else {
+		return -2;
+	}
+	
  }
 
  
  /***********************************************************************/
- /*	@brief		Transmit the byte to the master with ACK				*/
+ /*	@brief		Transmit the byte to the master 			*/
  /*																		*/
  /*	@param		uint8_t data											*/
  /*	@return		TWDR as data											*/
@@ -97,26 +96,27 @@
  /*	            MASTER_ERROR  - Something error happened				*/
  /***********************************************************************/
 
- uint8_t I2C_transmit_to_master_ACK(uint8_t data) {
+ uint8_t I2C_transmit_to_master(uint8_t data) {
 	
 	uint8_t twi_status;
 	TWDR = data;
 	// "clear" TWINT and generate ACK (TWEA)
 	TWCR |= (1 << TWINT) | (1 << TWEA) | (1 << TWEN);
-	while (!(TWCR & (1 << TWINT))){;}
+	while (!(TWCR & (1 << TWINT)));
 	twi_status = (TWSR & 0xF8);
 
 	if (twi_status == 0xA0) {
-		return MASTER_STOP;
+		TWCR |= (1 << TWINT);
+		return -1;
 	} else if (twi_status == 0xB8) {
-		return MASTER_ACK_RECEIVED;
+		return 0;
 	} else if (twi_status == 0xC0) {
 		TWCR |= (1 << TWINT);
-		return MASTER_NACK_RECEIVED;
+		return -2;
 	} else if (twi_status == 0xC8) {
-		return MASTER_LAST_BYTE_RECEIVED;
+		return -3;
 	} else {
-		return MASTER_ERROR;
+		return -4;
 	}
 
  }
@@ -131,25 +131,25 @@
  /*	            MASTER_ERROR  - Something error happened				*/
  /***********************************************************************/
 
- uint8_t I2C_transmit_to_master_NACK(uint8_t data) {
-	
-	uint8_t twi_status;
-	TWDR = data;
-	TWCR |= (1 << TWEN) | (1 << TWINT);
-	while (!(TWCR & (1 << TWINT))) {;}
-	
-	twi_status = (TWSR & 0xF8);
-	if (twi_status == 0xA0) {
-		return MASTER_STOP;
-	} else if (twi_status == 0xB8) {
-		return MASTER_ACK_RECEIVED;
-	} else if (twi_status == 0xC0) {
-		TWCR |= (1 << TWINT);
-		return MASTER_NACK_RECEIVED;
-	} else if (twi_status == 0xC8) {
-		return MASTER_LAST_BYTE_RECEIVED;
-	} else {
-		return MASTER_ERROR;
-	}
- }
+ //uint8_t I2C_transmit_to_master_NACK(uint8_t data) {
+	//
+	//uint8_t twi_status;
+	//TWDR = data;
+	//TWCR |= (1 << TWEN) | (1 << TWINT);
+	//while (!(TWCR & (1 << TWINT))) {;}
+	//
+	//twi_status = (TWSR & 0xF8);
+	//if (twi_status == 0xA0) {
+		//return MASTER_STOP;
+	//} else if (twi_status == 0xB8) {
+		//return MASTER_ACK_RECEIVED;
+	//} else if (twi_status == 0xC0) {
+		//TWCR |= (1 << TWINT);
+		//return MASTER_NACK_RECEIVED;
+	//} else if (twi_status == 0xC8) {
+		//return MASTER_LAST_BYTE_RECEIVED;
+	//} else {
+		//return MASTER_ERROR;
+	//}
+ //}
 

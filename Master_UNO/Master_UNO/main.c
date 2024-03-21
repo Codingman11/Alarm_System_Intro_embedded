@@ -20,7 +20,7 @@
 #include "i2c.h"
 #include "lcd.h"
 #include "usart.h"
-#include "buzzer.h"
+//#include "buzzer.h"
 
 #define	count 10
 FILE uart_output = FDEV_SETUP_STREAM(USART_transmit, NULL, _FDEV_SETUP_WRITE);
@@ -53,10 +53,69 @@ int main(void)
 	lcd_puts("Detecting");
 	//Slave address 
 	
-	buzzer_alarm();
+
 	/* Replace with your application code */
     while (1) 
     {
+		switch(g_State) {
+			case IDLE:
+				g_State = READ_MOTION;
+				break;
+			case HANDLE_KEYPAD:
+				break;
+			case READ_MOTION:
+				twi_status = I2C_start_read(SLAVE_READ_ADDRESS);
+				if (twi_status != 1) {
+					g_State = FAIL;
+					break;
+				}
+				motion_sensed = I2C_read_ack();
+				if (motion_sensed == 1) {
+					g_State = START_ALARM;
+				} else {
+					g_State = IDLE;
+				}
+				break;
+			case START_ALARM:
+				buzzer_alarm();
+				lcd_clrscr();
+				lcd_puts("Alarm!");
+				g_State = HANDLE_KEYPAD;
+				break;
+			case STOP_ALARM:
+				stop_buzzer();
+				lcd_clrscr();
+				lcd_puts("Alarm is stopped");
+				_delay_ms(2000);
+				lcd_clrscr();
+				lcd_puts("Detecting...");
+				g_State = IDLE;
+				break;
+			case WRONG_PASSWORD:
+				lcd_clrscr();
+				lcd_puts("Wrong password!");
+				_delay_ms(2000);
+				g_State = HANDLE_KEYPAD;
+				break;
+			case TOO_LONG_PASSWORD:
+				lcd_clrscr();
+				lcd_puts("Too long pwd");
+				_delay_ms(2000);
+				g_State = HANDLE_KEYPAD;
+				break;
+			case KEYPAD_TIMEOUT:
+				lcd_clrscr();
+				lcd_puts("Timeout!");
+				_delay_ms(2000);
+				g_State = HANDLE_KEYPAD;
+				break;
+			case FAIL:
+				I2C_stop();
+				I2C_init();
+				break;
+				
+			
+		}
 		
 		//I2C_start_write(SLAVE_WRITE_ADDRESS);
 		//_delay_ms(5);

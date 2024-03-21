@@ -19,17 +19,17 @@
 	TWCR = (1 <<TWSTA) | (1 <<TWEN) | (1 << TWINT);
 	while (! (TWCR & (1 << TWINT)));
 	twi_status = TWSR & 0xF8;
-	if (twi_status != 0x08) {
-		return 0;
+	if (twi_status != TWI_START_TRANSMIT) { //Condition START transmitted
+		return 0;			  //FAIL start
 	}
 	TWDR = slave_write_add;
-	TWCR = (1 << TWEN) | (1 << TWINT);
-	while (!(TWCR & (1 << TWINT)));
+	TWCR = (1 << TWEN) | (1 << TWINT); //Enable TWI & clear interrupt flag
+	while (!(TWCR & (1 << TWINT))); // Wait until TWI finished
 	twi_status = TWSR & 0xF8;
-	if (twi_status == 0x18) {
+	if (twi_status == TWI_SLA_W_ACK) { //SLA+W transmitted & ack received
 		return 1;
-	}
-	if (twi_status == 0x20) {
+	} 
+	if (twi_status == TWI_SLA_W_NACK) { //SLA+W transmitted & nack received
 		return 2;
 	}		
 
@@ -43,7 +43,7 @@
 	while (!(TWCR & (1 << TWINT)));
 	twi_status = TWSR & 0xF8;
 	if (twi_status != TWI_START_TRANSMIT) {
-		return 0;
+		return 0; 
 	}
 	TWCR = slave_read_add;
 	TWCR = (1 << TWEN) | (1 << TWINT);
@@ -56,7 +56,7 @@
 		return 2;
 	}
 
-	return 3; 
+	return 3; //SLA+R failed
  }
  //I2C write
 
@@ -66,14 +66,14 @@
 	TWCR = (1 << TWEN) | (1 << TWINT);
 	while (!(TWCR & (1 << TWINT)));
 	twi_status = TWSR & 0xF8;
-	if (twi_status == 0x28) {
+	if (twi_status == TWI_DATA_T_ACK) {
 		return 0;
 	}
-	if (twi_status == 0x30) {
+	if (twi_status == TWI_DATA_T_NACK) {
 		return 1;
 	} 
 
-	return 2; //Data transmission failed
+	return 4; //Data transmission failed
 		
  }
  //I2C ack read
